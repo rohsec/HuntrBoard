@@ -299,7 +299,9 @@ public class MusicPlayerManager implements BasicPlayerListener {
             notifyStatus("Track missing: " + track.displayName);
             return;
         }
+        ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         try {
+            Thread.currentThread().setContextClassLoader(MusicPlayerManager.class.getClassLoader());
             stopInternalSilently();
             BasicPlayer newPlayer = new BasicPlayer();
             newPlayer.addBasicPlayerListener(this);
@@ -319,6 +321,8 @@ public class MusicPlayerManager implements BasicPlayerListener {
             playing = false;
             emitPlaybackState();
             notifyStatus("Unable to play " + track.displayName + ". Check Burp's extension output for details.");
+        } finally {
+            Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
     }
 

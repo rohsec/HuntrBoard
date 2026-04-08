@@ -96,7 +96,7 @@ public class HuntrBoardPanel extends JPanel {
         JPanel titles = new JPanel();
         titles.setOpaque(false);
         titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
-        JPanel heading = UiSupport.createTitleLabel("🎯", "HuntrBoard", palette, 24f);
+        JPanel heading = UiSupport.createTitleLabel("⌖", "HuntrBoard", palette, 24f);
         JLabel subtitle = new JLabel("A tidy bounty dashboard, notes pad, and focus player inside Burp Suite.");
         subtitle.setForeground(palette.textSecondary);
         subtitle.setFont(subtitle.getFont().deriveFont(Font.PLAIN, 13f));

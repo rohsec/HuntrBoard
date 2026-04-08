@@ -76,7 +76,7 @@ public class MusicPlayerPanel extends CardPanel {
         JPanel titles = new JPanel();
         titles.setOpaque(false);
         titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
-        JPanel heading = UiSupport.createTitleLabel("🎵", "JukeBox", palette, 15f);
+        JPanel heading = UiSupport.createTitleLabel("♫", "JukeBox", palette, 15f);
         JLabel subtitle = new JLabel("Local MP3 playlist for focus sessions inside Burp.");
         subtitle.setForeground(palette.textSecondary);
         subtitle.setFont(subtitle.getFont().deriveFont(12f));

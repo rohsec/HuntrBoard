@@ -80,11 +80,15 @@ public class MusicPlayerManager implements BasicPlayerListener {
         this.playlistListener = listener == null ? () -> {} : listener;
     }
 
-    public synchronized void setAudioSourceMode(String mode) {
+    public void setAudioSourceMode(String mode) {
         String normalized = MODE_LOCAL.equalsIgnoreCase(mode) ? MODE_LOCAL : MODE_RADIO;
-        if (!normalized.equals(this.audioSourceMode)) {
-            stopInternal("Source changed.");
+        boolean changed;
+        synchronized (this) {
+            changed = !normalized.equals(this.audioSourceMode);
             this.audioSourceMode = normalized;
+        }
+        if (changed) {
+            executorService.submit(() -> stopInternal("Source changed."));
             firePlaylistChanged();
             emitCurrentTrack();
         }
@@ -457,39 +461,57 @@ public class MusicPlayerManager implements BasicPlayerListener {
         }
     }
 
-    private synchronized void stopInternal(String status) {
+    private void stopInternal(String status) {
         stopInternalSilently();
         notifyStatus(status);
     }
 
-    private synchronized void stopInternalSilently() {
-        if (player != null) {
+    private void stopInternalSilently() {
+        BasicPlayer playerToStop;
+        InputStream streamToClose;
+        HttpURLConnection connectionToClose;
+        synchronized (this) {
+            playerToStop = player;
+            player = null;
+            streamToClose = currentStream;
+            currentStream = null;
+            connectionToClose = currentConnection;
+            currentConnection = null;
+            paused = false;
+            playing = false;
+        }
+        if (playerToStop != null) {
             try {
-                player.stop();
+                playerToStop.stop();
             } catch (Exception exception) {
                 logging.logToError("HuntrBoard stop error: " + exception);
-            } finally {
-                player = null;
             }
         }
-        closeCurrentResources();
-        paused = false;
-        playing = false;
+        closeResources(streamToClose, connectionToClose);
         emitPlaybackState();
     }
 
-    private synchronized void closeCurrentResources() {
-        if (currentStream != null) {
+    private void closeCurrentResources() {
+        InputStream streamToClose;
+        HttpURLConnection connectionToClose;
+        synchronized (this) {
+            streamToClose = currentStream;
+            currentStream = null;
+            connectionToClose = currentConnection;
+            currentConnection = null;
+        }
+        closeResources(streamToClose, connectionToClose);
+    }
+
+    private void closeResources(InputStream streamToClose, HttpURLConnection connectionToClose) {
+        if (streamToClose != null) {
             try {
-                currentStream.close();
+                streamToClose.close();
             } catch (IOException ignored) {
-            } finally {
-                currentStream = null;
             }
         }
-        if (currentConnection != null) {
-            currentConnection.disconnect();
-            currentConnection = null;
+        if (connectionToClose != null) {
+            connectionToClose.disconnect();
         }
     }
 

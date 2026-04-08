@@ -46,9 +46,9 @@ public class MusicPlayerPanel extends CardPanel {
                             Runnable persistCallback, Consumer<String> statusCallback) {
         super(palette);
         setLayout(new BorderLayout(0, 8));
-        setPreferredSize(new Dimension(420, 330));
-        setMinimumSize(new Dimension(320, 300));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 330));
+        setPreferredSize(new Dimension(420, 300));
+        setMinimumSize(new Dimension(320, 276));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 300));
         this.playPauseButton = UiSupport.createAccentButton("⏵", palette);
         playPauseButton.setToolTipText("Play or pause");
         this.sourceSelector = new JComboBox<>(new String[]{"Radio Streams", "Local MP3 Files"});
@@ -121,10 +121,11 @@ public class MusicPlayerPanel extends CardPanel {
         JPanel center = new JPanel(new BorderLayout());
         center.setOpaque(false);
 
+        playlistList.setVisibleRowCount(5);
         JScrollPane scroll = new JScrollPane(playlistList);
         scroll.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
-        scroll.setPreferredSize(new Dimension(240, 152));
-        scroll.setMinimumSize(new Dimension(220, 136));
+        scroll.setPreferredSize(new Dimension(240, 116));
+        scroll.setMinimumSize(new Dimension(220, 104));
 
         center.add(scroll, BorderLayout.CENTER);
         return center;
@@ -132,7 +133,7 @@ public class MusicPlayerPanel extends CardPanel {
 
     private JPanel buildFooter(ThemePalette palette, MusicPlayerManager manager,
                                Runnable persistCallback, Consumer<String> statusCallback) {
-        JPanel footer = new JPanel(new BorderLayout(0, 6));
+        JPanel footer = new JPanel(new BorderLayout(0, 4));
         footer.setOpaque(false);
 
         JPanel actionRow = new JPanel(new GridBagLayout());
@@ -197,7 +198,7 @@ public class MusicPlayerPanel extends CardPanel {
         constraints.insets = new Insets(0, 8, 0, 0);
         actionRow.add(statusLabel, constraints);
 
-        JPanel volumeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
+        JPanel volumeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         volumeRow.setOpaque(false);
         JLabel volumeLabel = new JLabel("Volume");
         volumeLabel.setForeground(palette.textSecondary);

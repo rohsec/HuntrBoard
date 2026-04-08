@@ -54,9 +54,9 @@ public class NotesPanel extends CardPanel {
         add(buildHeader(palette), BorderLayout.NORTH);
         add(buildContent(palette), BorderLayout.CENTER);
         add(statusLabel, BorderLayout.SOUTH);
-        setPreferredSize(new Dimension(420, 470));
-        setMinimumSize(new Dimension(320, 430));
-        setMaximumSize(new Dimension(Integer.MAX_VALUE, 470));
+        setPreferredSize(new Dimension(420, 510));
+        setMinimumSize(new Dimension(320, 460));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 510));
         statusLabel.setForeground(palette.textSecondary);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
 
@@ -126,18 +126,18 @@ public class NotesPanel extends CardPanel {
         JPanel content = new JPanel(new BorderLayout(12, 0));
         content.setOpaque(false);
         JScrollPane listScroll = new JScrollPane(noteList);
-        listScroll.setPreferredSize(new Dimension(160, 340));
+        listScroll.setPreferredSize(new Dimension(160, 380));
         listScroll.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
 
         JScrollPane editorScroll = new JScrollPane(editorArea);
         editorScroll.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
-        editorScroll.setPreferredSize(new Dimension(320, 340));
-        editorScroll.setMinimumSize(new Dimension(240, 260));
+        editorScroll.setPreferredSize(new Dimension(320, 380));
+        editorScroll.setMinimumSize(new Dimension(240, 300));
 
         content.add(listScroll, BorderLayout.WEST);
         content.add(editorScroll, BorderLayout.CENTER);
-        content.setPreferredSize(new Dimension(0, 340));
-        content.setMinimumSize(new Dimension(0, 340));
+        content.setPreferredSize(new Dimension(0, 380));
+        content.setMinimumSize(new Dimension(0, 380));
         return content;
     }
 

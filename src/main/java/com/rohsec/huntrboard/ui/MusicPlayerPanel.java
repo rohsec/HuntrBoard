@@ -38,7 +38,6 @@ import java.util.function.Consumer;
 public class MusicPlayerPanel extends CardPanel {
     private final DefaultListModel<Object> listModel = new DefaultListModel<>();
     private final JList<Object> playlistList = new JList<>(listModel);
-    private final JLabel trackLabel = new JLabel("No radio stream selected");
     private final JLabel statusLabel = new JLabel("Ready");
     private final JButton playPauseButton;
     private final JComboBox<String> sourceSelector;
@@ -89,7 +88,7 @@ public class MusicPlayerPanel extends CardPanel {
         });
 
         manager.setPlaylistListener(() -> refreshVisibleSource(manager));
-        manager.setCurrentTrackListener(trackLabel::setText);
+        manager.setCurrentTrackListener(ignored -> {});
         manager.setPlaybackStateListener(this::updatePlayPauseButton);
         manager.setStatusListener(status -> {
             statusLabel.setText(status);
@@ -114,41 +113,19 @@ public class MusicPlayerPanel extends CardPanel {
         titles.add(Box.createVerticalStrut(3));
         titles.add(subtitle);
 
-        JPanel switcher = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
-        switcher.setOpaque(false);
-        JLabel modeLabel = new JLabel("Stream source");
-        modeLabel.setForeground(palette.textSecondary);
-        sourceSelector.setFocusable(false);
-        JButton addSourceButton = UiSupport.createIconButton("＋", "Add radio stream", palette);
-        addSourceButton.addActionListener(event -> openAddStreamDialog(manager, persistCallback));
-        switcher.add(modeLabel);
-        switcher.add(sourceSelector);
-        switcher.add(addSourceButton);
-
-        header.add(titles, BorderLayout.NORTH);
-        header.add(switcher, BorderLayout.SOUTH);
+        header.add(titles, BorderLayout.CENTER);
         return header;
     }
 
     private JPanel buildCenter(ThemePalette palette) {
-        JPanel center = new JPanel(new BorderLayout(0, 6));
+        JPanel center = new JPanel(new BorderLayout());
         center.setOpaque(false);
-
-        trackLabel.setForeground(palette.textPrimary);
-        trackLabel.setFont(trackLabel.getFont().deriveFont(Font.BOLD, 13f));
-
-        JPanel info = new JPanel();
-        info.setOpaque(false);
-        info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.add(trackLabel);
-        info.add(Box.createVerticalStrut(6));
 
         JScrollPane scroll = new JScrollPane(playlistList);
         scroll.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
-        scroll.setPreferredSize(new Dimension(240, 132));
-        scroll.setMinimumSize(new Dimension(220, 116));
+        scroll.setPreferredSize(new Dimension(240, 152));
+        scroll.setMinimumSize(new Dimension(220, 136));
 
-        center.add(info, BorderLayout.NORTH);
         center.add(scroll, BorderLayout.CENTER);
         return center;
     }
@@ -170,6 +147,9 @@ public class MusicPlayerPanel extends CardPanel {
         JButton previousButton = UiSupport.createIconButton("⏮", "Previous", palette);
         JButton shuffleButton = UiSupport.createIconButton("⤮", "Shuffle queue", palette);
         JButton nextButton = UiSupport.createIconButton("⏭", "Next", palette);
+        JLabel modeLabel = new JLabel("Stream source");
+        modeLabel.setForeground(palette.textSecondary);
+        sourceSelector.setFocusable(false);
 
         addButton.addActionListener(event -> {
             if (MusicPlayerManager.MODE_RADIO.equals(manager.getAudioSourceMode())) {
@@ -202,9 +182,16 @@ public class MusicPlayerPanel extends CardPanel {
             actionRow.add(buttons[index], constraints);
         }
 
+        constraints.gridx = buttons.length;
+        constraints.weightx = 0;
+        constraints.fill = GridBagConstraints.NONE;
+        actionRow.add(modeLabel, constraints);
+        constraints.gridx = buttons.length + 1;
+        actionRow.add(sourceSelector, constraints);
+
         statusLabel.setForeground(palette.textSecondary);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        constraints.gridx = buttons.length;
+        constraints.gridx = buttons.length + 2;
         constraints.weightx = 1;
         constraints.fill = GridBagConstraints.HORIZONTAL;
         constraints.insets = new Insets(0, 8, 0, 0);

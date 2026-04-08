@@ -73,7 +73,7 @@ public class NotesPanel extends CardPanel {
         titles.setOpaque(false);
         titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
         titles.setAlignmentX(LEFT_ALIGNMENT);
-        JLabel heading = new JLabel("Notepad");
+        JLabel heading = new JLabel("🖊 Notepad");
         heading.setForeground(palette.textPrimary);
         heading.setFont(heading.getFont().deriveFont(Font.BOLD, 16f));
         JLabel subtitle = new JLabel("Quick scratchpads that persist across Burp sessions.");
@@ -90,7 +90,7 @@ public class NotesPanel extends CardPanel {
         JButton renameButton = UiSupport.createIconButton("✎", "Rename note", palette);
         JButton saveButton = UiSupport.createAccentButton("⭳", palette);
         saveButton.setToolTipText("Save note");
-        JButton deleteButton = UiSupport.createIconButton("🗑", "Delete note", palette);
+        JButton deleteButton = UiSupport.createIconButton("⌦", "Delete note", palette);
         newButton.addActionListener(event -> createNote());
         renameButton.addActionListener(event -> renameNote());
         saveButton.addActionListener(event -> saveCurrentNote());

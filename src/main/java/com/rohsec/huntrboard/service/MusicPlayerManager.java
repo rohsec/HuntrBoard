@@ -25,9 +25,11 @@ public class MusicPlayerManager implements BasicPlayerListener {
 
     private Consumer<String> currentTrackListener = ignored -> {};
     private Consumer<String> statusListener = ignored -> {};
+    private Consumer<Boolean> playbackStateListener = ignored -> {};
     private Runnable playlistListener = () -> {};
     private int currentIndex = -1;
     private boolean paused;
+    private boolean playing;
     private double volume = 0.75d;
 
     public MusicPlayerManager(Logging logging) {
@@ -43,6 +45,11 @@ public class MusicPlayerManager implements BasicPlayerListener {
 
     public synchronized void setStatusListener(Consumer<String> listener) {
         this.statusListener = listener == null ? ignored -> {} : listener;
+    }
+
+    public synchronized void setPlaybackStateListener(Consumer<Boolean> listener) {
+        this.playbackStateListener = listener == null ? ignored -> {} : listener;
+        emitPlaybackState();
     }
 
     public synchronized void setPlaylistListener(Runnable listener) {
@@ -73,6 +80,14 @@ public class MusicPlayerManager implements BasicPlayerListener {
         return volume;
     }
 
+    public synchronized boolean isPlaying() {
+        return playing;
+    }
+
+    public synchronized boolean isPaused() {
+        return paused;
+    }
+
     public synchronized void setCurrentIndex(int index) {
         if (index < -1 || index >= playlist.size()) {
             currentIndex = playlist.isEmpty() ? -1 : 0;
@@ -99,12 +114,12 @@ public class MusicPlayerManager implements BasicPlayerListener {
         boolean removingCurrent = index == currentIndex;
         playlist.remove(index);
         if (playlist.isEmpty()) {
-            stop();
+            stopInternal("Playback stopped.");
             currentIndex = -1;
         } else if (index < currentIndex) {
             currentIndex--;
         } else if (removingCurrent) {
-            stop();
+            stopInternal("Playback stopped.");
             currentIndex = Math.min(index, playlist.size() - 1);
         }
         firePlaylistChanged();
@@ -126,13 +141,31 @@ public class MusicPlayerManager implements BasicPlayerListener {
         emitCurrentTrack();
     }
 
+    public synchronized void togglePlayPause(int selectedIndex) {
+        if (playing) {
+            pause();
+            return;
+        }
+        if (paused) {
+            resume();
+            return;
+        }
+        if (selectedIndex >= 0 && selectedIndex < playlist.size()) {
+            playAt(selectedIndex);
+            return;
+        }
+        if (currentIndex < 0 && !playlist.isEmpty()) {
+            currentIndex = 0;
+        }
+        playAt(currentIndex);
+    }
+
     public synchronized void playAt(int index) {
         if (index < 0 || index >= playlist.size()) {
             notifyStatus("No track selected.");
             return;
         }
         currentIndex = index;
-        paused = false;
         MusicTrack track = playlist.get(index);
         File file = Path.of(track.path).toFile();
         if (!file.isFile()) {
@@ -146,29 +179,30 @@ public class MusicPlayerManager implements BasicPlayerListener {
             player.stop();
             player.open(file);
             player.play();
+            paused = false;
+            playing = true;
             applyGain();
             notifyStatus("Playing " + track.displayName);
             emitCurrentTrack();
+            emitPlaybackState();
         } catch (Exception exception) {
             logging.logToError("HuntrBoard player error for '" + track.displayName + "': " + exception);
+            paused = false;
+            playing = false;
+            emitPlaybackState();
             notifyStatus("Unable to play " + track.displayName + ". Check Burp's extension output for details.");
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
     }
 
-    public synchronized void playOrResume() {
+    private synchronized void resume() {
         try {
-            if (paused) {
-                player.resume();
-                paused = false;
-                notifyStatus("Resumed playback.");
-                return;
-            }
-            if (currentIndex < 0 && !playlist.isEmpty()) {
-                currentIndex = 0;
-            }
-            playAt(currentIndex);
+            player.resume();
+            paused = false;
+            playing = true;
+            notifyStatus("Resumed playback.");
+            emitPlaybackState();
         } catch (Exception exception) {
             logging.logToError("HuntrBoard resume error: " + exception);
             notifyStatus("Unable to resume playback.");
@@ -179,21 +213,25 @@ public class MusicPlayerManager implements BasicPlayerListener {
         try {
             player.pause();
             paused = true;
+            playing = false;
             notifyStatus("Playback paused.");
+            emitPlaybackState();
         } catch (Exception exception) {
             logging.logToError("HuntrBoard pause error: " + exception);
             notifyStatus("Unable to pause playback.");
         }
     }
 
-    public synchronized void stop() {
+    private synchronized void stopInternal(String status) {
         try {
             player.stop();
         } catch (Exception exception) {
             logging.logToError("HuntrBoard stop error: " + exception);
         }
         paused = false;
-        notifyStatus("Playback stopped.");
+        playing = false;
+        emitPlaybackState();
+        notifyStatus(status);
     }
 
     public synchronized void next() {
@@ -236,6 +274,11 @@ public class MusicPlayerManager implements BasicPlayerListener {
         SwingUtilities.invokeLater(() -> currentTrackListener.accept(label));
     }
 
+    private void emitPlaybackState() {
+        boolean state = playing;
+        SwingUtilities.invokeLater(() -> playbackStateListener.accept(state));
+    }
+
     private void notifyStatus(String status) {
         SwingUtilities.invokeLater(() -> statusListener.accept(status));
     }
@@ -248,7 +291,7 @@ public class MusicPlayerManager implements BasicPlayerListener {
     }
 
     public synchronized void close() {
-        stop();
+        stopInternal("Playback stopped.");
     }
 
     @Override
@@ -263,6 +306,9 @@ public class MusicPlayerManager implements BasicPlayerListener {
     @Override
     public void stateUpdated(BasicPlayerEvent event) {
         if (event.getCode() == BasicPlayerEvent.EOM) {
+            paused = false;
+            playing = false;
+            emitPlaybackState();
             SwingUtilities.invokeLater(this::next);
         }
     }

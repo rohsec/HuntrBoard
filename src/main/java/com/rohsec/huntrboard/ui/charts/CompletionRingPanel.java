@@ -37,7 +37,7 @@ public class CompletionRingPanel extends JPanel {
 
         int width = getWidth();
         int height = getHeight();
-        int size = Math.min(width, height) - 48;
+        int size = Math.min(width - 48, height - 92);
         int x = (width - size) / 2;
         int y = 24;
 
@@ -60,7 +60,8 @@ public class CompletionRingPanel extends JPanel {
         g2.setFont(g2.getFont().deriveFont(12f));
         int footerWidth = g2.getFontMetrics().stringWidth(footerLabel);
         g2.setColor(palette.textSecondary);
-        g2.drawString(footerLabel, Math.max(18, (width - footerWidth) / 2), height - 18);
+        int footerY = Math.min(height - 16, y + size + 28);
+        g2.drawString(footerLabel, Math.max(18, (width - footerWidth) / 2), footerY);
         g2.dispose();
     }
 }

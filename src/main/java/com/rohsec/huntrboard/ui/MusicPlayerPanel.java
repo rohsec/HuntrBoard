@@ -31,11 +31,15 @@ public class MusicPlayerPanel extends CardPanel {
     private final JList<MusicTrack> playlistList = new JList<>(listModel);
     private final JLabel trackLabel = new JLabel("Nothing playing");
     private final JLabel statusLabel = new JLabel("Ready");
+    private final JButton playPauseButton;
 
     public MusicPlayerPanel(ThemePalette palette, MusicPlayerManager manager,
                             Runnable persistCallback, Consumer<String> statusCallback) {
         super(palette);
         setLayout(new BorderLayout(0, 10));
+        this.playPauseButton = UiSupport.createAccentButton("⏵", palette);
+        playPauseButton.setToolTipText("Play or pause");
+
         add(buildHeader(palette), BorderLayout.NORTH);
         add(buildCenter(palette), BorderLayout.CENTER);
         add(buildFooter(palette, manager, persistCallback, statusCallback), BorderLayout.SOUTH);
@@ -56,11 +60,13 @@ public class MusicPlayerPanel extends CardPanel {
 
         manager.setPlaylistListener(() -> refreshPlaylist(manager));
         manager.setCurrentTrackListener(trackLabel::setText);
+        manager.setPlaybackStateListener(this::updatePlayPauseButton);
         manager.setStatusListener(status -> {
             statusLabel.setText(status);
             statusCallback.accept(status);
         });
         refreshPlaylist(manager);
+        updatePlayPauseButton(manager.isPlaying());
     }
 
     private JPanel buildHeader(ThemePalette palette) {
@@ -70,7 +76,7 @@ public class MusicPlayerPanel extends CardPanel {
         JPanel titles = new JPanel();
         titles.setOpaque(false);
         titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
-        JLabel heading = new JLabel("JukeBox");
+        JLabel heading = new JLabel("🎵 JukeBox");
         heading.setForeground(palette.textPrimary);
         heading.setFont(heading.getFont().deriveFont(Font.BOLD, 15f));
         JLabel subtitle = new JLabel("Local MP3 playlist for focus sessions inside Burp.");
@@ -121,10 +127,6 @@ public class MusicPlayerPanel extends CardPanel {
         JButton removeButton = UiSupport.createIconButton("－", "Remove selected track", palette);
         JButton previousButton = UiSupport.createIconButton("⏮", "Previous", palette);
         JButton shuffleButton = UiSupport.createIconButton("⤮", "Shuffle playlist", palette);
-        JButton playButton = UiSupport.createAccentButton("⏵", palette);
-        playButton.setToolTipText("Play selected or current track");
-        JButton pauseButton = UiSupport.createIconButton("⏸", "Pause", palette);
-        JButton stopButton = UiSupport.createIconButton("⏹", "Stop", palette);
         JButton nextButton = UiSupport.createIconButton("⏭", "Next", palette);
 
         addButton.addActionListener(event -> addTracks(manager, persistCallback));
@@ -134,24 +136,14 @@ public class MusicPlayerPanel extends CardPanel {
             manager.shuffle();
             persistCallback.run();
         });
-        playButton.addActionListener(event -> {
-            if (playlistList.getSelectedIndex() >= 0) {
-                manager.playAt(playlistList.getSelectedIndex());
-            } else {
-                manager.playOrResume();
-            }
-        });
-        pauseButton.addActionListener(event -> manager.pause());
-        stopButton.addActionListener(event -> manager.stop());
+        playPauseButton.addActionListener(event -> manager.togglePlayPause(playlistList.getSelectedIndex()));
         nextButton.addActionListener(event -> manager.next());
 
         actionRow.add(addButton);
         actionRow.add(removeButton);
         actionRow.add(previousButton);
         actionRow.add(shuffleButton);
-        actionRow.add(playButton);
-        actionRow.add(pauseButton);
-        actionRow.add(stopButton);
+        actionRow.add(playPauseButton);
         actionRow.add(nextButton);
 
         JPanel volumeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
@@ -176,6 +168,11 @@ public class MusicPlayerPanel extends CardPanel {
         footer.add(volumeRow, BorderLayout.CENTER);
         footer.add(statusLabel, BorderLayout.SOUTH);
         return footer;
+    }
+
+    private void updatePlayPauseButton(boolean playing) {
+        playPauseButton.setText(playing ? "⏸" : "⏵");
+        playPauseButton.setToolTipText(playing ? "Pause" : "Play");
     }
 
     private void addTracks(MusicPlayerManager manager, Runnable persistCallback) {

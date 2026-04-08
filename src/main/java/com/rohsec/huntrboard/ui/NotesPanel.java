@@ -14,12 +14,19 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
+import javax.swing.AbstractAction;
+import javax.swing.undo.CannotRedoException;
+import javax.swing.undo.CannotUndoException;
+import javax.swing.undo.UndoManager;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.event.InputEvent;
+import java.awt.event.KeyEvent;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +39,9 @@ public class NotesPanel extends CardPanel {
     private final JLabel statusLabel = new JLabel("Ready");
     private final Consumer<String> statusCallback;
     private final Runnable persistCallback;
+    private final UndoManager undoManager = new UndoManager();
     private boolean switching;
+    private boolean resettingUndo;
     private String lastSelectedNoteId;
 
     public NotesPanel(ThemePalette palette, List<NoteDocument> notes, String activeNoteId,
@@ -45,6 +54,9 @@ public class NotesPanel extends CardPanel {
         add(buildHeader(palette), BorderLayout.NORTH);
         add(buildContent(palette), BorderLayout.CENTER);
         add(statusLabel, BorderLayout.SOUTH);
+        setPreferredSize(new Dimension(420, 470));
+        setMinimumSize(new Dimension(320, 430));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 470));
         statusLabel.setForeground(palette.textSecondary);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
 
@@ -57,6 +69,12 @@ public class NotesPanel extends CardPanel {
         editorArea.setForeground(palette.textPrimary);
         editorArea.setCaretColor(palette.textPrimary);
         editorArea.setSelectionColor(palette.accent);
+        editorArea.getDocument().addUndoableEditListener(event -> {
+            if (!resettingUndo) {
+                undoManager.addEdit(event.getEdit());
+            }
+        });
+        installUndoRedoBindings();
         noteList.setBackground(palette.fieldBackground);
         noteList.setForeground(palette.textPrimary);
         noteList.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
@@ -113,9 +131,13 @@ public class NotesPanel extends CardPanel {
 
         JScrollPane editorScroll = new JScrollPane(editorArea);
         editorScroll.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
+        editorScroll.setPreferredSize(new Dimension(320, 340));
+        editorScroll.setMinimumSize(new Dimension(240, 260));
 
         content.add(listScroll, BorderLayout.WEST);
         content.add(editorScroll, BorderLayout.CENTER);
+        content.setPreferredSize(new Dimension(0, 340));
+        content.setMinimumSize(new Dimension(0, 340));
         return content;
     }
 
@@ -129,10 +151,10 @@ public class NotesPanel extends CardPanel {
         }
         NoteDocument selected = noteList.getSelectedValue();
         if (selected != null) {
-            editorArea.setText(selected.content == null ? "" : selected.content);
+            setEditorText(selected.content == null ? "" : selected.content);
             lastSelectedNoteId = selected.id;
         } else {
-            editorArea.setText("");
+            setEditorText("");
             lastSelectedNoteId = null;
         }
         updateStatus("Loaded note.");
@@ -155,10 +177,10 @@ public class NotesPanel extends CardPanel {
                 }
             }
             noteList.setSelectedIndex(selectedIndex);
-            editorArea.setText(listModel.get(selectedIndex).content == null ? "" : listModel.get(selectedIndex).content);
+            setEditorText(listModel.get(selectedIndex).content == null ? "" : listModel.get(selectedIndex).content);
             lastSelectedNoteId = listModel.get(selectedIndex).id;
         } else {
-            editorArea.setText("");
+            setEditorText("");
         }
         switching = false;
     }
@@ -192,7 +214,7 @@ public class NotesPanel extends CardPanel {
         NoteDocument note = NoteDocument.create(name.trim());
         listModel.add(0, note);
         noteList.setSelectedIndex(0);
-        editorArea.setText("");
+        setEditorText("");
         saveCurrentNote();
         updateStatus("Created note '" + note.title + "'.");
     }
@@ -250,6 +272,45 @@ public class NotesPanel extends CardPanel {
         noteList.repaint();
         persistCallback.run();
         updateStatus("Saved '" + note.title + "'.");
+    }
+
+    private void setEditorText(String text) {
+        resettingUndo = true;
+        try {
+            editorArea.setText(text);
+            undoManager.discardAllEdits();
+            editorArea.setCaretPosition(0);
+        } finally {
+            resettingUndo = false;
+        }
+    }
+
+    private void installUndoRedoBindings() {
+        editorArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK), "huntrboard-undo");
+        editorArea.getActionMap().put("huntrboard-undo", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent event) {
+                try {
+                    if (undoManager.canUndo()) {
+                        undoManager.undo();
+                    }
+                } catch (CannotUndoException ignored) {
+                }
+            }
+        });
+        editorArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_Y, InputEvent.CTRL_DOWN_MASK), "huntrboard-redo");
+        editorArea.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_Z, InputEvent.CTRL_DOWN_MASK | InputEvent.SHIFT_DOWN_MASK), "huntrboard-redo");
+        editorArea.getActionMap().put("huntrboard-redo", new AbstractAction() {
+            @Override
+            public void actionPerformed(java.awt.event.ActionEvent event) {
+                try {
+                    if (undoManager.canRedo()) {
+                        undoManager.redo();
+                    }
+                } catch (CannotRedoException ignored) {
+                }
+            }
+        });
     }
 
     private NoteDocument findNoteById(String noteId) {

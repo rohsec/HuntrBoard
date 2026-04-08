@@ -12,9 +12,17 @@ import java.awt.Cursor;
 import java.awt.Desktop;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GraphicsEnvironment;
 import java.net.URI;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class UiSupport {
+    private static final Set<String> AVAILABLE_FONT_FAMILIES = new HashSet<>(
+            Arrays.asList(GraphicsEnvironment.getLocalGraphicsEnvironment().getAvailableFontFamilyNames())
+    );
+
     private UiSupport() {
     }
 
@@ -40,6 +48,34 @@ public final class UiSupport {
         button.setForeground(Color.WHITE);
         button.setBorder(BorderFactory.createEmptyBorder(7, 12, 7, 12));
         return button;
+    }
+
+    public static JPanel createTitleLabel(String emoji, String title, ThemePalette palette, float fontSize) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel emojiLabel = new JLabel(emoji);
+        emojiLabel.setForeground(palette.textPrimary);
+        emojiLabel.setFont(selectEmojiFont(fontSize));
+
+        JLabel textLabel = new JLabel(title);
+        textLabel.setForeground(palette.textPrimary);
+        textLabel.setFont(textLabel.getFont().deriveFont(Font.BOLD, fontSize));
+
+        panel.add(emojiLabel);
+        panel.add(textLabel);
+        return panel;
+    }
+
+    private static Font selectEmojiFont(float size) {
+        String[] preferredFonts = {"Noto Color Emoji", "Noto Emoji", "Segoe UI Emoji", "Apple Color Emoji", "Symbola"};
+        for (String family : preferredFonts) {
+            if (AVAILABLE_FONT_FAMILIES.contains(family)) {
+                return new Font(family, Font.PLAIN, Math.round(size));
+            }
+        }
+        return new Font(Font.SANS_SERIF, Font.PLAIN, Math.round(size));
     }
 
     public static JPanel createSignalBadge(ThemePalette palette) {

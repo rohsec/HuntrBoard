@@ -73,9 +73,7 @@ public class NotesPanel extends CardPanel {
         titles.setOpaque(false);
         titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
         titles.setAlignmentX(LEFT_ALIGNMENT);
-        JLabel heading = new JLabel("🖊 Notepad");
-        heading.setForeground(palette.textPrimary);
-        heading.setFont(heading.getFont().deriveFont(Font.BOLD, 16f));
+        JPanel heading = UiSupport.createTitleLabel("🖊", "Notepad", palette, 16f);
         JLabel subtitle = new JLabel("Quick scratchpads that persist across Burp sessions.");
         subtitle.setForeground(palette.textSecondary);
         subtitle.setFont(subtitle.getFont().deriveFont(Font.PLAIN, 12f));

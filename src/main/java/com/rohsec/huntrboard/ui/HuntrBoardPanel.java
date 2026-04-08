@@ -357,8 +357,11 @@ public class HuntrBoardPanel extends JPanel {
         notesPanel.flushCurrentEditor();
         state.notes = notesPanel.getNotes();
         state.activeNoteId = notesPanel.getActiveNoteId();
+        state.audioSourceMode = musicPlayerManager.getAudioSourceMode();
         state.playlist = musicPlayerManager.getPlaylist();
+        state.radioStations = musicPlayerManager.getRadioStations();
         state.currentTrackIndex = musicPlayerManager.getCurrentIndex();
+        state.currentRadioStationIndex = musicPlayerManager.getCurrentRadioIndex();
         state.playerVolume = musicPlayerManager.getVolume();
         stateRepository.save(state);
         setStatus(status);

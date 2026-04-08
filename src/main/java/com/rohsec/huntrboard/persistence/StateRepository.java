@@ -6,6 +6,7 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.rohsec.huntrboard.model.AppState;
 import com.rohsec.huntrboard.model.NoteDocument;
+import com.rohsec.huntrboard.model.RadioStation;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -60,6 +61,9 @@ Focus: targets, notes, and JukeBox workflow in one tab.
         AppState state = new AppState();
         state.notes = new ArrayList<>(List.of(createDefaultScratchpad()));
         state.activeNoteId = state.notes.getFirst().id;
+        state.audioSourceMode = "RADIO";
+        state.radioStations = new ArrayList<>(defaultRadioStations());
+        state.currentRadioStationIndex = state.radioStations.isEmpty() ? -1 : 0;
         return state;
     }
 
@@ -103,11 +107,31 @@ Focus: targets, notes, and JukeBox workflow in one tab.
                 track.displayName = track.path;
             }
         }
+        if (state.radioStations == null || state.radioStations.isEmpty()) {
+            state.radioStations = new ArrayList<>(defaultRadioStations());
+        }
+        state.radioStations.removeIf(station -> station == null || station.url == null || station.url.isBlank());
+        for (var station : state.radioStations) {
+            if (station.name == null || station.name.isBlank()) {
+                station.name = station.url;
+            }
+        }
+        if (!"LOCAL".equalsIgnoreCase(state.audioSourceMode)) {
+            state.audioSourceMode = "RADIO";
+        } else {
+            state.audioSourceMode = "LOCAL";
+        }
         if (state.currentTrackIndex >= state.playlist.size()) {
             state.currentTrackIndex = state.playlist.isEmpty() ? -1 : 0;
         }
         if (state.currentTrackIndex < -1) {
             state.currentTrackIndex = -1;
+        }
+        if (state.currentRadioStationIndex >= state.radioStations.size()) {
+            state.currentRadioStationIndex = state.radioStations.isEmpty() ? -1 : 0;
+        }
+        if (state.currentRadioStationIndex < -1) {
+            state.currentRadioStationIndex = -1;
         }
         if (state.playerVolume < 0.0d || state.playerVolume > 1.0d) {
             state.playerVolume = 0.75d;
@@ -119,5 +143,14 @@ Focus: targets, notes, and JukeBox workflow in one tab.
         NoteDocument note = NoteDocument.create("Global Scratchpad");
         note.content = BRANDING_NOTE;
         return note;
+    }
+
+    private List<RadioStation> defaultRadioStations() {
+        return List.of(
+                new RadioStation("Lofi Radio", "https://boxradio-edge-00.streamafrica.net/lofi"),
+                new RadioStation("Chillhop Radio", "https://stream.zeno.fm/f3wvbbqmdg8uv"),
+                new RadioStation("Groove Salad", "https://ice1.somafm.com/groovesalad-128-mp3"),
+                new RadioStation("Mixify New Hits", "https://server.mixify.in/listen/new_hits/radio.mp3")
+        );
     }
 }

@@ -20,7 +20,10 @@ public class HuntrBoardExtension implements BurpExtension {
 
         musicPlayerManager = new MusicPlayerManager(montoyaApi.logging());
         musicPlayerManager.setPlaylist(state.playlist);
+        musicPlayerManager.setRadioStations(state.radioStations);
+        musicPlayerManager.setAudioSourceMode(state.audioSourceMode);
         musicPlayerManager.setCurrentIndex(state.currentTrackIndex);
+        musicPlayerManager.setCurrentRadioIndex(state.currentRadioStationIndex);
         musicPlayerManager.setVolume(state.playerVolume);
 
         panel = new HuntrBoardPanel(montoyaApi, stateRepository, state, musicPlayerManager);

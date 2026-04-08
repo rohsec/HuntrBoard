@@ -42,9 +42,6 @@ public class MusicPlayerPanel extends CardPanel {
     private final JLabel statusLabel = new JLabel("Ready");
     private final JButton playPauseButton;
     private final JComboBox<String> sourceSelector;
-    private final JTextField stationNameField = new JTextField();
-    private final JTextField stationUrlField = new JTextField();
-    private final JPanel radioFormPanel = new JPanel(new GridBagLayout());
 
     public MusicPlayerPanel(ThemePalette palette, MusicPlayerManager manager,
                             Runnable persistCallback, Consumer<String> statusCallback) {
@@ -85,10 +82,6 @@ public class MusicPlayerPanel extends CardPanel {
             }
         });
 
-        styleField(stationNameField, palette);
-        styleField(stationUrlField, palette);
-        configureRadioForm(palette);
-
         sourceSelector.addActionListener(event -> {
             manager.setAudioSourceMode(sourceSelector.getSelectedIndex() == 0 ? MusicPlayerManager.MODE_RADIO : MusicPlayerManager.MODE_LOCAL);
             refreshVisibleSource(manager);
@@ -123,11 +116,14 @@ public class MusicPlayerPanel extends CardPanel {
 
         JPanel switcher = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         switcher.setOpaque(false);
-        JLabel modeLabel = new JLabel("Source");
+        JLabel modeLabel = new JLabel("Stream source");
         modeLabel.setForeground(palette.textSecondary);
         sourceSelector.setFocusable(false);
+        JButton addSourceButton = UiSupport.createIconButton("＋", "Add radio stream", palette);
+        addSourceButton.addActionListener(event -> openAddStreamDialog(manager, persistCallback));
         switcher.add(modeLabel);
         switcher.add(sourceSelector);
+        switcher.add(addSourceButton);
 
         header.add(titles, BorderLayout.NORTH);
         header.add(switcher, BorderLayout.SOUTH);
@@ -138,25 +134,19 @@ public class MusicPlayerPanel extends CardPanel {
         JPanel center = new JPanel(new BorderLayout(0, 6));
         center.setOpaque(false);
 
-        JLabel current = new JLabel("Now queued");
-        current.setForeground(palette.textSecondary);
-        current.setFont(current.getFont().deriveFont(Font.PLAIN, 11f));
         trackLabel.setForeground(palette.textPrimary);
         trackLabel.setFont(trackLabel.getFont().deriveFont(Font.BOLD, 13f));
 
         JPanel info = new JPanel();
         info.setOpaque(false);
         info.setLayout(new BoxLayout(info, BoxLayout.Y_AXIS));
-        info.add(current);
-        info.add(Box.createVerticalStrut(2));
         info.add(trackLabel);
         info.add(Box.createVerticalStrut(6));
-        info.add(radioFormPanel);
 
         JScrollPane scroll = new JScrollPane(playlistList);
         scroll.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
-        scroll.setPreferredSize(new Dimension(240, 108));
-        scroll.setMinimumSize(new Dimension(220, 92));
+        scroll.setPreferredSize(new Dimension(240, 132));
+        scroll.setMinimumSize(new Dimension(220, 116));
 
         center.add(info, BorderLayout.NORTH);
         center.add(scroll, BorderLayout.CENTER);
@@ -183,9 +173,7 @@ public class MusicPlayerPanel extends CardPanel {
 
         addButton.addActionListener(event -> {
             if (MusicPlayerManager.MODE_RADIO.equals(manager.getAudioSourceMode())) {
-                manager.addOrUpdateRadioStation(stationNameField.getText(), stationUrlField.getText());
-                refreshVisibleSource(manager);
-                persistCallback.run();
+                openAddStreamDialog(manager, persistCallback);
             } else {
                 addTracks(manager, persistCallback);
             }
@@ -242,48 +230,8 @@ public class MusicPlayerPanel extends CardPanel {
         return footer;
     }
 
-    private void configureRadioForm(ThemePalette palette) {
-        radioFormPanel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(0, 0, 4, 6);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.gridy = 0;
-
-        JLabel nameLabel = new JLabel("Name");
-        nameLabel.setForeground(palette.textSecondary);
-        nameLabel.setFont(nameLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        JLabel urlLabel = new JLabel("URL");
-        urlLabel.setForeground(palette.textSecondary);
-        urlLabel.setFont(urlLabel.getFont().deriveFont(Font.PLAIN, 11f));
-
-        gbc.gridx = 0;
-        gbc.weightx = 0;
-        radioFormPanel.add(nameLabel, gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 0.35;
-        radioFormPanel.add(stationNameField, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        gbc.weightx = 0;
-        radioFormPanel.add(urlLabel, gbc);
-        gbc.gridx = 1;
-        gbc.weightx = 1;
-        radioFormPanel.add(stationUrlField, gbc);
-    }
-
-    private void styleField(JTextField field, ThemePalette palette) {
-        field.setBackground(palette.fieldBackground);
-        field.setForeground(palette.textPrimary);
-        field.setCaretColor(palette.textPrimary);
-        field.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(palette.fieldBorder, 1, true),
-                BorderFactory.createEmptyBorder(5, 8, 5, 8)
-        ));
-    }
-
     private void refreshVisibleSource(MusicPlayerManager manager) {
         boolean radioMode = MusicPlayerManager.MODE_RADIO.equals(manager.getAudioSourceMode());
-        radioFormPanel.setVisible(radioMode);
         listModel.clear();
         if (radioMode) {
             List<RadioStation> stations = manager.getRadioStations();
@@ -293,14 +241,6 @@ public class MusicPlayerPanel extends CardPanel {
             int current = manager.getCurrentRadioIndex();
             if (current >= 0 && current < listModel.size()) {
                 playlistList.setSelectedIndex(current);
-                Object selected = listModel.get(current);
-                if (selected instanceof RadioStation station) {
-                    stationNameField.setText(station.name == null ? "" : station.name);
-                    stationUrlField.setText(station.url == null ? "" : station.url);
-                }
-            } else {
-                stationNameField.setText("");
-                stationUrlField.setText("");
             }
         } else {
             List<MusicTrack> tracks = manager.getPlaylist();
@@ -311,11 +251,52 @@ public class MusicPlayerPanel extends CardPanel {
             if (current >= 0 && current < listModel.size()) {
                 playlistList.setSelectedIndex(current);
             }
-            stationNameField.setText("");
-            stationUrlField.setText("");
         }
         playlistList.revalidate();
         playlistList.repaint();
+    }
+
+    private void openAddStreamDialog(MusicPlayerManager manager, Runnable persistCallback) {
+        if (!MusicPlayerManager.MODE_RADIO.equals(manager.getAudioSourceMode())) {
+            return;
+        }
+        JPanel panel = new JPanel(new GridBagLayout());
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(4, 4, 4, 4);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JTextField nameField = new JTextField(24);
+        JTextField urlField = new JTextField(34);
+
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Stream name"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        panel.add(nameField, gbc);
+
+        gbc.gridx = 0;
+        gbc.gridy = 1;
+        gbc.weightx = 0;
+        panel.add(new JLabel("Source URL"), gbc);
+        gbc.gridx = 1;
+        gbc.weightx = 1;
+        panel.add(urlField, gbc);
+
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                panel,
+                "Add radio stream",
+                JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE
+        );
+        if (result != JOptionPane.OK_OPTION) {
+            return;
+        }
+        manager.addOrUpdateRadioStation(nameField.getText(), urlField.getText());
+        refreshVisibleSource(manager);
+        persistCallback.run();
     }
 
     private void playSelected(MusicPlayerManager manager) {

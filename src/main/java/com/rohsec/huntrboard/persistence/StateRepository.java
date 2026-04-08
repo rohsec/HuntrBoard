@@ -13,6 +13,17 @@ import java.util.List;
 
 public class StateRepository {
     private static final String STATE_KEY = "huntrboard.state";
+    private static final String BRANDING_NOTE = """
+ _   _             _       ____                       _ 
+| | | |_   _ _ __ | |_ _ _| __ )  ___   __ _ _ __ __| |
+| |_| | | | | '_ \\| __| '__|  _ \\ / _ \\ / _` | '__/ _` |
+|  _  | |_| | | | | |_| |  | |_) | (_) | (_| | | | (_| |
+|_| |_|\\__,_|_| |_|\\__|_|  |____/ \\___/ \\__,_|_|  \\__,_|
+
+Version: 1.0.0
+Built for Burp Suite with Montoya API + Java 21
+Focus: targets, notes, and JukeBox workflow in one tab.
+""";
 
     private final Persistence persistence;
     private final Logging logging;
@@ -47,7 +58,7 @@ public class StateRepository {
 
     private AppState defaultState() {
         AppState state = new AppState();
-        state.notes = new ArrayList<>(List.of(NoteDocument.create("Global Scratchpad")));
+        state.notes = new ArrayList<>(List.of(createDefaultScratchpad()));
         state.activeNoteId = state.notes.getFirst().id;
         return state;
     }
@@ -58,7 +69,7 @@ public class StateRepository {
         }
         state.tracker.ensureMonthCount();
         if (state.notes == null || state.notes.isEmpty()) {
-            state.notes = new ArrayList<>(List.of(NoteDocument.create("Global Scratchpad")));
+            state.notes = new ArrayList<>(List.of(createDefaultScratchpad()));
         }
         for (int index = 0; index < state.notes.size(); index++) {
             NoteDocument note = state.notes.get(index);
@@ -74,6 +85,9 @@ public class StateRepository {
             }
             if (note.content == null) {
                 note.content = "";
+            }
+            if ("Global Scratchpad".equals(note.title) && note.content.isBlank()) {
+                note.content = BRANDING_NOTE;
             }
         }
         state.notes.sort(Comparator.comparingLong(note -> -note.updatedAt));
@@ -99,5 +113,11 @@ public class StateRepository {
             state.playerVolume = 0.75d;
         }
         return state;
+    }
+
+    private NoteDocument createDefaultScratchpad() {
+        NoteDocument note = NoteDocument.create("Global Scratchpad");
+        note.content = BRANDING_NOTE;
+        return note;
     }
 }

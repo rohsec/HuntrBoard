@@ -18,6 +18,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.event.ListSelectionEvent;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -64,13 +65,15 @@ public class NotesPanel extends CardPanel {
     }
 
     private JPanel buildHeader(ThemePalette palette) {
-        JPanel header = new JPanel(new BorderLayout());
+        JPanel header = new JPanel();
         header.setOpaque(false);
+        header.setLayout(new BoxLayout(header, BoxLayout.Y_AXIS));
 
         JPanel titles = new JPanel();
         titles.setOpaque(false);
         titles.setLayout(new BoxLayout(titles, BoxLayout.Y_AXIS));
-        JLabel heading = new JLabel("Global Notes");
+        titles.setAlignmentX(LEFT_ALIGNMENT);
+        JLabel heading = new JLabel("Notepad");
         heading.setForeground(palette.textPrimary);
         heading.setFont(heading.getFont().deriveFont(Font.BOLD, 16f));
         JLabel subtitle = new JLabel("Quick scratchpads that persist across Burp sessions.");
@@ -80,12 +83,14 @@ public class NotesPanel extends CardPanel {
         titles.add(Box.createVerticalStrut(4));
         titles.add(subtitle);
 
-        JPanel actions = new JPanel();
+        JPanel actions = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         actions.setOpaque(false);
-        JButton newButton = new JButton("New");
-        JButton renameButton = new JButton("Rename");
-        JButton saveButton = new JButton("Save");
-        JButton deleteButton = new JButton("Delete");
+        actions.setAlignmentX(LEFT_ALIGNMENT);
+        JButton newButton = UiSupport.createIconButton("＋", "New note", palette);
+        JButton renameButton = UiSupport.createIconButton("✎", "Rename note", palette);
+        JButton saveButton = UiSupport.createAccentButton("⭳", palette);
+        saveButton.setToolTipText("Save note");
+        JButton deleteButton = UiSupport.createIconButton("🗑", "Delete note", palette);
         newButton.addActionListener(event -> createNote());
         renameButton.addActionListener(event -> renameNote());
         saveButton.addActionListener(event -> saveCurrentNote());
@@ -95,8 +100,9 @@ public class NotesPanel extends CardPanel {
         actions.add(saveButton);
         actions.add(deleteButton);
 
-        header.add(titles, BorderLayout.WEST);
-        header.add(actions, BorderLayout.EAST);
+        header.add(titles);
+        header.add(Box.createVerticalStrut(8));
+        header.add(actions);
         return header;
     }
 

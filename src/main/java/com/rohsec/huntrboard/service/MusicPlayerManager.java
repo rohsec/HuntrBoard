@@ -11,14 +11,17 @@ import javax.swing.SwingUtilities;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.function.Consumer;
 
 public class MusicPlayerManager implements BasicPlayerListener {
     private final Logging logging;
     private final BasicPlayer player;
     private final List<MusicTrack> playlist = new ArrayList<>();
+    private final Random random = new Random();
 
     private Consumer<String> currentTrackListener = ignored -> {};
     private Consumer<String> statusListener = ignored -> {};
@@ -105,6 +108,21 @@ public class MusicPlayerManager implements BasicPlayerListener {
             currentIndex = Math.min(index, playlist.size() - 1);
         }
         firePlaylistChanged();
+        emitCurrentTrack();
+    }
+
+    public synchronized void shuffle() {
+        if (playlist.size() < 2) {
+            notifyStatus("Add at least two tracks to shuffle.");
+            return;
+        }
+        MusicTrack currentTrack = currentIndex >= 0 && currentIndex < playlist.size() ? playlist.get(currentIndex) : null;
+        Collections.shuffle(playlist, random);
+        if (currentTrack != null) {
+            currentIndex = playlist.indexOf(currentTrack);
+        }
+        firePlaylistChanged();
+        notifyStatus("Playlist shuffled.");
         emitCurrentTrack();
     }
 

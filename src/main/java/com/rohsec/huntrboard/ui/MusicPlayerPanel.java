@@ -20,6 +20,7 @@ import javax.swing.ListSelectionModel;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
+import java.awt.FlowLayout;
 import java.awt.Font;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -114,11 +115,12 @@ public class MusicPlayerPanel extends CardPanel {
         JPanel footer = new JPanel(new BorderLayout(0, 8));
         footer.setOpaque(false);
 
-        JPanel actionRow = new JPanel();
+        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
         actionRow.setOpaque(false);
         JButton addButton = UiSupport.createIconButton("＋", "Add MP3 files", palette);
         JButton removeButton = UiSupport.createIconButton("－", "Remove selected track", palette);
         JButton previousButton = UiSupport.createIconButton("⏮", "Previous", palette);
+        JButton shuffleButton = UiSupport.createIconButton("⤮", "Shuffle playlist", palette);
         JButton playButton = UiSupport.createAccentButton("⏵", palette);
         playButton.setToolTipText("Play selected or current track");
         JButton pauseButton = UiSupport.createIconButton("⏸", "Pause", palette);
@@ -128,6 +130,10 @@ public class MusicPlayerPanel extends CardPanel {
         addButton.addActionListener(event -> addTracks(manager, persistCallback));
         removeButton.addActionListener(event -> removeTrack(manager, persistCallback));
         previousButton.addActionListener(event -> manager.previous());
+        shuffleButton.addActionListener(event -> {
+            manager.shuffle();
+            persistCallback.run();
+        });
         playButton.addActionListener(event -> {
             if (playlistList.getSelectedIndex() >= 0) {
                 manager.playAt(playlistList.getSelectedIndex());
@@ -142,23 +148,26 @@ public class MusicPlayerPanel extends CardPanel {
         actionRow.add(addButton);
         actionRow.add(removeButton);
         actionRow.add(previousButton);
+        actionRow.add(shuffleButton);
         actionRow.add(playButton);
         actionRow.add(pauseButton);
         actionRow.add(stopButton);
         actionRow.add(nextButton);
 
-        JPanel volumeRow = new JPanel(new BorderLayout(8, 0));
+        JPanel volumeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         volumeRow.setOpaque(false);
         JLabel volumeLabel = new JLabel("Volume");
         volumeLabel.setForeground(palette.textSecondary);
         JSlider volumeSlider = new JSlider(0, 100, (int) Math.round(manager.getVolume() * 100.0d));
         volumeSlider.setOpaque(false);
+        volumeSlider.setPreferredSize(new Dimension(110, 20));
+        volumeSlider.setMaximumSize(new Dimension(110, 20));
         volumeSlider.addChangeListener(event -> {
             manager.setVolume(volumeSlider.getValue() / 100.0d);
             persistCallback.run();
         });
-        volumeRow.add(volumeLabel, BorderLayout.WEST);
-        volumeRow.add(volumeSlider, BorderLayout.CENTER);
+        volumeRow.add(volumeLabel);
+        volumeRow.add(volumeSlider);
 
         statusLabel.setForeground(palette.textSecondary);
         statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));

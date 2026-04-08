@@ -22,6 +22,9 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.Insets;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.function.Consumer;
@@ -36,7 +39,10 @@ public class MusicPlayerPanel extends CardPanel {
     public MusicPlayerPanel(ThemePalette palette, MusicPlayerManager manager,
                             Runnable persistCallback, Consumer<String> statusCallback) {
         super(palette);
-        setLayout(new BorderLayout(0, 10));
+        setLayout(new BorderLayout(0, 8));
+        setPreferredSize(new Dimension(420, 290));
+        setMinimumSize(new Dimension(320, 270));
+        setMaximumSize(new Dimension(Integer.MAX_VALUE, 290));
         this.playPauseButton = UiSupport.createAccentButton("⏵", palette);
         playPauseButton.setToolTipText("Play or pause");
 
@@ -89,7 +95,7 @@ public class MusicPlayerPanel extends CardPanel {
     }
 
     private JPanel buildCenter(ThemePalette palette) {
-        JPanel center = new JPanel(new BorderLayout(0, 8));
+        JPanel center = new JPanel(new BorderLayout(0, 6));
         center.setOpaque(false);
 
         JLabel current = new JLabel("Now playing");
@@ -107,7 +113,8 @@ public class MusicPlayerPanel extends CardPanel {
 
         JScrollPane scroll = new JScrollPane(playlistList);
         scroll.setBorder(BorderFactory.createLineBorder(palette.fieldBorder, 1, true));
-        scroll.setPreferredSize(new Dimension(240, 128));
+        scroll.setPreferredSize(new Dimension(240, 94));
+        scroll.setMinimumSize(new Dimension(220, 84));
 
         center.add(info, BorderLayout.NORTH);
         center.add(scroll, BorderLayout.CENTER);
@@ -116,11 +123,16 @@ public class MusicPlayerPanel extends CardPanel {
 
     private JPanel buildFooter(ThemePalette palette, MusicPlayerManager manager,
                                Runnable persistCallback, Consumer<String> statusCallback) {
-        JPanel footer = new JPanel(new BorderLayout(0, 8));
+        JPanel footer = new JPanel(new BorderLayout(0, 6));
         footer.setOpaque(false);
 
-        JPanel actionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 6, 0));
+        JPanel actionRow = new JPanel(new GridBagLayout());
         actionRow.setOpaque(false);
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.gridy = 0;
+        constraints.insets = new Insets(0, 0, 0, 6);
+        constraints.anchor = GridBagConstraints.WEST;
+
         JButton addButton = UiSupport.createIconButton("＋", "Add MP3 files", palette);
         JButton removeButton = UiSupport.createIconButton("－", "Remove selected track", palette);
         JButton previousButton = UiSupport.createIconButton("⏮", "Previous", palette);
@@ -137,12 +149,21 @@ public class MusicPlayerPanel extends CardPanel {
         playPauseButton.addActionListener(event -> manager.togglePlayPause(playlistList.getSelectedIndex()));
         nextButton.addActionListener(event -> manager.next());
 
-        actionRow.add(addButton);
-        actionRow.add(removeButton);
-        actionRow.add(previousButton);
-        actionRow.add(shuffleButton);
-        actionRow.add(playPauseButton);
-        actionRow.add(nextButton);
+        JButton[] buttons = {addButton, removeButton, previousButton, shuffleButton, playPauseButton, nextButton};
+        for (int index = 0; index < buttons.length; index++) {
+            constraints.gridx = index;
+            constraints.weightx = 0;
+            constraints.fill = GridBagConstraints.NONE;
+            actionRow.add(buttons[index], constraints);
+        }
+
+        statusLabel.setForeground(palette.textSecondary);
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
+        constraints.gridx = buttons.length;
+        constraints.weightx = 1;
+        constraints.fill = GridBagConstraints.HORIZONTAL;
+        constraints.insets = new Insets(0, 8, 0, 0);
+        actionRow.add(statusLabel, constraints);
 
         JPanel volumeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         volumeRow.setOpaque(false);
@@ -150,8 +171,8 @@ public class MusicPlayerPanel extends CardPanel {
         volumeLabel.setForeground(palette.textSecondary);
         JSlider volumeSlider = new JSlider(0, 100, (int) Math.round(manager.getVolume() * 100.0d));
         volumeSlider.setOpaque(false);
-        volumeSlider.setPreferredSize(new Dimension(110, 20));
-        volumeSlider.setMaximumSize(new Dimension(110, 20));
+        volumeSlider.setPreferredSize(new Dimension(96, 18));
+        volumeSlider.setMaximumSize(new Dimension(96, 18));
         volumeSlider.addChangeListener(event -> {
             manager.setVolume(volumeSlider.getValue() / 100.0d);
             persistCallback.run();
@@ -159,12 +180,8 @@ public class MusicPlayerPanel extends CardPanel {
         volumeRow.add(volumeLabel);
         volumeRow.add(volumeSlider);
 
-        statusLabel.setForeground(palette.textSecondary);
-        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.PLAIN, 11f));
-
         footer.add(actionRow, BorderLayout.NORTH);
         footer.add(volumeRow, BorderLayout.CENTER);
-        footer.add(statusLabel, BorderLayout.SOUTH);
         return footer;
     }
 
